@@ -1,0 +1,655 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "Pencunpay HalCash API",
+    "description": "API para el acceder a los servicios SOAP de HalCash a traves de servicios Rest de Pecunpay",
+    "version": "1.0",
+    "termsOfService": "https://www.pecunpay.es/TOS"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/CoredeApi_war/api/v1/generico/",
+      "description": "API Halcash Servidor de Pruebas"
+    }
+  ],
+  "paths": {
+    "/halcash": {
+      "post": {
+        "summary": "Llevar a cabo un alta en el servicio de Halcash",
+        "operationId": "altaHalcash",
+        "tags": [
+          "Halcash"
+        ],
+        "parameters": [
+          {
+            "name": "pec-mb-firma",
+            "in": "header",
+            "required": true,
+            "description": "Firma md5 para autenticación de la cuenta del cliente.",
+            "schema": {
+              "type": "string"
+            },
+            "example": {
+              "pec-mb-firma": "f66ba7c351e1577fe22f887e5c4de4c1"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PeticionAutorizacion"
+              },
+              "example": {
+                "nombreRemitente": "Pedro Perez",
+                "tlfnMovil": 65542457,
+                "prefTlf": 251,
+                "importe": 100,
+                "fecCaducidad": "11/11/2019",
+                "claveSecreta": 1234,
+                "numMp": 987654321
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Peticion de Autorizacion Exitosa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeticionAutorizacionResp"
+                },
+                "example": {
+                  "codResultado": "0000",
+                  "desResultado": "Descripcion del resultado",
+                  "numTicket": "002091151104000",
+                  "fecAutorizacion": "10/11/2019",
+                  "fecCaducidad": "11/11/2019"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Error de Validacion (VXXX)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 400,
+                  "status": "BAD_REQUEST",
+                  "type": "Validation",
+                  "message": "Error de validación.",
+                  "details": "Codigo Halcash: V019 The Cancellation data don't match with the Authorization data"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error asociado a Mastercard (MXXX)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 409,
+                  "status": "CONFLICT",
+                  "type": "Mastercard",
+                  "message": "Error de base de Mastercard.",
+                  "details": "Codigo Halcash: M002 The Issuer Ticket or the PurchaseRequestId were already used"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Error de conversion peticion/respuesta (CXXX), Servicio web (W000), Generando transacciones (STXX) y otros errores",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 415,
+                  "status": "UNSUPPORTED_MEDIA_TYPE",
+                  "type": "Conversion",
+                  "message": "Error de conversion.",
+                  "details": "Codigo Halcash: C002 Error when marshaling the object request/response"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de Procesamiento o Base de datos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 422,
+                  "status": "UNPROCESSABLE_ENTITY",
+                  "type": "Process {or Database}",
+                  "message": "Error de procesamiento.",
+                  "details": "Codigo Halcash: P008 The transaction does not exist or its status is not expected"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Errores no categorizados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 500,
+                  "status": "INTERNAL_SERVER_ERROR",
+                  "type": "Internal",
+                  "message": "Error no categorizado.",
+                  "details": "Codigo Halcash: C999 Check this error with the HalCash Technical team"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Errores no categorizados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 500,
+                  "status": "INTERNAL_SERVER_ERROR",
+                  "type": "Internal",
+                  "message": "Error no categorizado.",
+                  "details": "Codigo Halcash: I000 Error when initiating the process"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/halcash/{numeroTicket}": {
+      "get": {
+        "summary": "Consulta de estado de un numero de Ticket Halcash",
+        "operationId": "consultarHalcash",
+        "tags": [
+          "Halcash"
+        ],
+        "parameters": [
+          {
+            "name": "numeroTicket",
+            "in": "path",
+            "required": true,
+            "description": "El numero del ticket Halcash que se desea consultar",
+            "schema": {
+              "type": "string"
+            },
+            "example": {
+              "numeroTicket": "002091151104000"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Peticion de Consulta Exitosa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeticionConsultaResp"
+                },
+                "example": {
+                  "codResultado": "0000",
+                  "desResultado": "Descripcion del resultado",
+                  "numTicket": "002091151104000",
+                  "fecAutorizacion": "10/11/2019",
+                  "fecCaducidad": "11/11/2019"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Error de Validacion (VXXX)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 400,
+                  "status": "BAD_REQUEST",
+                  "type": "Validation",
+                  "message": "Error de validación.",
+                  "details": "Codigo Halcash: V019 The Cancellation data don't match with the Authorization data"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error asociado a Mastercard (MXXX)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 409,
+                  "status": "CONFLICT",
+                  "type": "Mastercard",
+                  "message": "Error de base de Mastercard.",
+                  "details": "Codigo Halcash: M002 The Issuer Ticket or the PurchaseRequestId were already used"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Error de conversion peticion/respuesta (CXXX), Servicio web (W000), Generando transacciones (STXX) y otros errores",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 415,
+                  "status": "UNSUPPORTED_MEDIA_TYPE",
+                  "type": "Conversion",
+                  "message": "Error de conversion.",
+                  "details": "Codigo Halcash: C002 Error when marshaling the object request/response"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de Procesamiento o Base de datos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 422,
+                  "status": "UNPROCESSABLE_ENTITY",
+                  "type": "Process {or Database}",
+                  "message": "Error de procesamiento.",
+                  "details": "Codigo Halcash: P008 The transaction does not exist or its status is not expected"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Errores no categorizados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 500,
+                  "status": "INTERNAL_SERVER_ERROR",
+                  "type": "Internal",
+                  "message": "Error no categorizado.",
+                  "details": "Codigo Halcash: C999 Check this error with the HalCash Technical team"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Errores no categorizados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 500,
+                  "status": "INTERNAL_SERVER_ERROR",
+                  "type": "Internal",
+                  "message": "Error no categorizado.",
+                  "details": "Codigo Halcash: I000 Error when initiating the process"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Cancelar un numero de Ticket Halcash",
+        "operationId": "cancelarHalcash",
+        "tags": [
+          "Halcash"
+        ],
+        "parameters": [
+          {
+            "name": "numeroTicket",
+            "in": "path",
+            "required": true,
+            "description": "El numero del ticket Halcash que se desea cancelar",
+            "schema": {
+              "type": "string"
+            },
+            "example": {
+              "numeroTicket": "002091151104000"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Peticion de Cancelacion Exitosa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeticionCancelarResp"
+                },
+                "example": {
+                  "codResultado": "0000",
+                  "desResultado": "Descripcion del resultado",
+                  "numTicket": "002091151104000",
+                  "fecCancela": "10/17/2019"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Error de Validacion (VXXX)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 400,
+                  "status": "BAD_REQUEST",
+                  "type": "Validation",
+                  "message": "Error de validación.",
+                  "details": "Codigo Halcash: V019 The Cancellation data don't match with the Authorization data"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error asociado a Mastercard (MXXX)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 409,
+                  "status": "CONFLICT",
+                  "type": "Mastercard",
+                  "message": "Error de base de Mastercard.",
+                  "details": "Codigo Halcash: M002 The Issuer Ticket or the PurchaseRequestId were already used"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Error de conversion peticion/respuesta (CXXX), Servicio web (W000), Generando transacciones (STXX) y otros errores",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 415,
+                  "status": "UNSUPPORTED_MEDIA_TYPE",
+                  "type": "Conversion",
+                  "message": "Error de conversion.",
+                  "details": "Codigo Halcash: C002 Error when marshaling the object request/response"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de Procesamiento o Base de datos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 422,
+                  "status": "UNPROCESSABLE_ENTITY",
+                  "type": "Process {or Database}",
+                  "message": "Error de procesamiento.",
+                  "details": "Codigo Halcash: P008 The transaction does not exist or its status is not expected"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Errores no categorizados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 500,
+                  "status": "INTERNAL_SERVER_ERROR",
+                  "type": "Internal",
+                  "message": "Error no categorizado.",
+                  "details": "Codigo Halcash: C999 Check this error with the HalCash Technical team"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Errores no categorizados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 500,
+                  "status": "INTERNAL_SERVER_ERROR",
+                  "type": "Internal",
+                  "message": "Error no categorizado.",
+                  "details": "Codigo Halcash: I000 Error when initiating the process"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PeticionAutorizacion": {
+        "required": [
+          "nombreRemitente",
+          "tlfnMovil",
+          "prefTlf",
+          "importe",
+          "fecCaducidad",
+          "claveSecreta",
+          "numMp"
+        ],
+        "properties": {
+          "nombreRemitente": {
+            "type": "string"
+          },
+          "tlfnMovil": {
+            "type": "string"
+          },
+          "prefTlf": {
+            "type": "string"
+          },
+          "importe": {
+            "type": "string"
+          },
+          "fecCaducidad": {
+            "type": "string"
+          },
+          "claveSecreta": {
+            "type": "string"
+          },
+          "numMp": {
+            "type": "string"
+          }
+        }
+      },
+      "PeticionAutorizacionResp": {
+        "required": [
+          "codResultado",
+          "desResultado",
+          "numTicket",
+          "fecAutorizacion",
+          "fecCaducidad"
+        ],
+        "properties": {
+          "codResultado": {
+            "type": "string"
+          },
+          "desResultado": {
+            "type": "string"
+          },
+          "fecAutorizacion": {
+            "type": "string"
+          },
+          "fecCaducidad": {
+            "type": "string"
+          },
+          "importe": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "fecStatus": {
+            "type": "string"
+          },
+          "tlfnMovil": {
+            "type": "string"
+          },
+          "prefTlf": {
+            "type": "string"
+          },
+          "fecCancela": {
+            "type": "string"
+          }
+        }
+      },
+      "PeticionConsultaResp": {
+        "required": [
+          "codResultado",
+          "desResultado",
+          "numTicket",
+          "fecAutorizacion",
+          "fecCaducidad",
+          "importe",
+          "status",
+          "fecStatus",
+          "prefTlf",
+          "tlfnMovil"
+        ],
+        "properties": {
+          "codResultado": {
+            "type": "string"
+          },
+          "desResultado": {
+            "type": "string"
+          },
+          "fecAutorizacion": {
+            "type": "string"
+          },
+          "fecCaducidad": {
+            "type": "string"
+          },
+          "importe": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "fecStatus": {
+            "type": "string"
+          },
+          "tlfnMovil": {
+            "type": "string"
+          },
+          "prefTlf": {
+            "type": "string"
+          },
+          "fecCancela": {
+            "type": "string"
+          }
+        }
+      },
+      "PeticionCancelarResp": {
+        "required": [
+          "codResultado",
+          "desResultado",
+          "numTicket",
+          "fecCancela"
+        ],
+        "properties": {
+          "codResultado": {
+            "type": "string"
+          },
+          "desResultado": {
+            "type": "string"
+          },
+          "fecAutorizacion": {
+            "type": "string"
+          },
+          "fecCaducidad": {
+            "type": "string"
+          },
+          "importe": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "fecStatus": {
+            "type": "string"
+          },
+          "tlfnMovil": {
+            "type": "string"
+          },
+          "prefTlf": {
+            "type": "string"
+          },
+          "fecCancela": {
+            "type": "string"
+          }
+        }
+      },
+      "Error": {
+        "required": [
+          "code",
+          "message",
+          "status",
+          "type",
+          "details"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
